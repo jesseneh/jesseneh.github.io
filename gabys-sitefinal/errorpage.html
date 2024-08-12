@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Page Not Found</title>
+
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .header-image {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header-image img {
+            max-width: 200px; /* Adjust the width as needed */
+            height: auto;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            margin: 0; /* Remove default margin */
+            background: url('background.JPG') no-repeat center center; /* Replace with your image path */
+            background-size: cover; /* This will make the background cover the entire viewport */
+        }
+
+        .options {
+            position: absolute; /* Use absolute positioning */
+            top: 0; /* Position it at the top */
+            left: 0; /* Position it at the left */
+            width: 400px; /* Adjust the width as needed */
+            height: auto; /* Maintain aspect ratio */
+            z-index: 10; /* Ensure it's above other elements */
+        }
+
+        .game-container {
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative; /* Ensure this is relative to position children correctly */
+            z-index: 1; /* Ensure the game container is above the background */
+        }
+
+        #game {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            overflow: hidden;
+        }
+
+        #camera, #falling-object {
+            position: absolute;
+        }
+
+        #camera {
+            width: 130px; /* Adjust width as needed */
+            height: auto;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        #falling-object {
+            width: 90px; /* Increase width as needed */
+            height: auto; /* Maintain aspect ratio */
+            top: -20px; /* Start higher to account for the increased size */
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        #score {
+            font-size: 18px;
+            margin-top: 10px;
+        }
+
+        #home-link {
+            display: block;
+            margin-top: 20px;
+            text-decoration: none;
+            color: #007bff;
+        }
+
+        #game-over {
+            display: none; /* Initially hidden */
+            font-size: 24px;
+            color: red;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+<img src="options.JPG" alt="Options" class="options">
+<div class="game-container">
+    <div class="header-image">
+        <img src="title.png" alt="Title"> <!-- Ensure this path is correct -->
+    </div>
+    <h1>404 - Page Not Found</h1>
+    <h2>Oh no...Looks like we ran out of strips, help us catch them all!</h2>
+    <div id="game">
+        <img id="camera" src="camera.png" alt="Camera">
+        <img id="falling-object" src="falling-object.png" alt="Falling Object">
+    </div>
+    <button id="start-game">Start Game</button>
+    <p id="score">Score: 0</p>
+    <div id="game-over">Game Over! Your score: 0</div> <!-- Added game over message -->
+    <a href="/" id="home-link">Return to Home</a>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const camera = document.getElementById('camera');
+        const fallingObject = document.getElementById('falling-object');
+        const scoreElement = document.getElementById('score');
+        const startButton = document.getElementById('start-game');
+        const gameOverMessage = document.getElementById('game-over');
+        const collisionBuffer = 60; // Adjust this value as needed
+
+        let score = 0;
+        let gameInterval;
+
+        function startGame() {
+            score = 0;
+            updateScore();
+            fallingObject.style.left = Math.random() * (document.getElementById('game').offsetWidth - fallingObject.offsetWidth) + 'px';
+            fallingObject.style.top = '-50px'; // Start higher to account for the increased size
+            gameOverMessage.style.display = 'none';
+
+            if (gameInterval) clearInterval(gameInterval);
+
+            gameInterval = setInterval(() => {
+                const cameraRect = camera.getBoundingClientRect();
+                const objectRect = fallingObject.getBoundingClientRect();
+                const gameRect = document.getElementById('game').getBoundingClientRect();
+
+                // Check if the bottom of the object has fallen past the bottom of the game area
+                if (objectRect.bottom > gameRect.bottom) {
+                    endGame(); // End the game if the object is out of view
+                } else if (
+                    objectRect.bottom > cameraRect.top + collisionBuffer &&
+                    objectRect.top < cameraRect.bottom - collisionBuffer &&
+                    objectRect.left < cameraRect.right - collisionBuffer &&
+                    objectRect.right > cameraRect.left + collisionBuffer
+                ) {
+                    score++;
+                    updateScore();
+                    fallingObject.style.top = '-50px'; // Reset to start above the screen
+                    fallingObject.style.left = Math.random() * (gameRect.width - fallingObject.offsetWidth) + 'px'; // Random horizontal position
+                } else {
+                    // Move the falling object down
+                    fallingObject.style.top = (parseFloat(fallingObject.style.top) + 5) + 'px'; // Adjust falling speed here
+                }
+            }, 100); // Keep the interval at 100ms for consistent falling speed
+        }
+
+        function endGame() {
+            clearInterval(gameInterval);
+            gameOverMessage.style.display = 'block'; // Show game over message immediately
+            gameOverMessage.textContent = `Game Over! Your score: ${score}`; // Display score
+        }
+
+        function updateScore() {
+            scoreElement.textContent = `Score: ${score}`;
+        }
+
+        document.addEventListener('mousemove', (e) => {
+            const gameRect = camera.parentElement.getBoundingClientRect();
+
+            // Calculate the new left position of the camera
+            let newLeft = e.clientX - gameRect.left - camera.offsetWidth / 2;
+
+            // Ensure the camera stays within the bounds of the game container
+            if (newLeft < 0) {
+                newLeft = 0; // Prevent the camera from moving past the left boundary
+            }
+
+            if (newLeft > gameRect.width - camera.offsetWidth) {
+                newLeft = gameRect.width - camera.offsetWidth+100; // Prevent the camera from moving past the right boundary
+            }
+
+            camera.style.left = `${newLeft}px`;
+        });
+
+        startButton.addEventListener('click', startGame);
+    });
+</script>
+</body>
+</html>
